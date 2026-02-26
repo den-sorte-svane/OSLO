@@ -1,4 +1,13 @@
 {
-  "generated_at": null,
-  "events": []
+  "generated_at": "2026-02-26T14:41:14.722240",
+  "events": [
+    {
+      "id": "sample|https://example.com",
+      "source": "sample",
+      "venue": "Eksempel Venue",
+      "title": "Eksempel Event",
+      "start": "2026-02-26T14:41:14.722231",
+      "url": "https://example.com"
+    }
+  ]
 }
