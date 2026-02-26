@@ -11,6 +11,9 @@ import requests
 from bs4 import BeautifulSoup
 from dateutil import tz
 
+import asyncio
+from playwright.async_api import async_playwright
+
 DATA_PATH = Path("data/events.json")
 OSLO_TZ = tz.gettz("Europe/Oslo")
 
