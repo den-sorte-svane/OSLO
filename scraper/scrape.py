@@ -112,10 +112,11 @@ async def parse_parkteatret():
 
 def main():
     prev = load_previous()
-    new_events = parse_parkteatret()
+
+    new_events = asyncio.run(parse_parkteatret())
+
     merged = diff_and_merge(prev.get("events", []), new_events)
     save(merged)
-
 
 if __name__ == "__main__":
     main()
