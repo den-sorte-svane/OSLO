@@ -57,33 +57,35 @@ def diff_and_merge(prev_events, new_events):
     return out
 
 
-def parse_parkteatret() -> List[Event]:
+def parse_parkteatret():
     url = "https://www.parkteatret.no/program"
     html = requests.get(url, timeout=30).text
     soup = BeautifulSoup(html, "lxml")
 
     events = []
 
-    for h2 in soup.select("h2"):
-        title = h2.get_text(strip=True)
+    # Finn alle event-lenker
+    for a in soup.select("a[href*='/event']"):
+        title = a.get_text(strip=True)
         if not title:
             continue
 
-        a = h2.find("a")
-        event_url = a["href"] if a and a.has_attr("href") else url
+        event_url = a["href"]
         if event_url.startswith("/"):
             event_url = "https://www.parkteatret.no" + event_url
 
-        text_block = h2.parent.get_text(" ", strip=True)
+        parent_text = a.parent.get_text(" ", strip=True)
 
-        m_date = re.search(r"(\\d{2})\\.(\\d{2})\\.(\\d{2})", text_block)
+        # Finn dato
+        m_date = re.search(r"(\\d{2})\\.(\\d{2})\\.(\\d{2})", parent_text)
         if not m_date:
             continue
 
         dd, mm, yy = map(int, m_date.groups())
         year = 2000 + yy
 
-        m_time = re.search(r"(\\d{1,2}):(\\d{2})", text_block)
+        # Finn tid
+        m_time = re.search(r"(\\d{1,2}):(\\d{2})", parent_text)
         hh, mi = (int(m_time.group(1)), int(m_time.group(2))) if m_time else (19, 0)
 
         dt = datetime(year, mm, dd, hh, mi, tzinfo=OSLO_TZ)
