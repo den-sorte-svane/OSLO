@@ -57,46 +57,54 @@ def diff_and_merge(prev_events, new_events):
     return out
 
 
-def parse_parkteatret():
-    url = "https://www.parkteatret.no/program"
-    html = requests.get(url, timeout=30).text
-    soup = BeautifulSoup(html, "lxml")
+import asyncio
+from playwright.async_api import async_playwright
 
+
+async def parse_parkteatret():
     events = []
 
-    # Finn alle event-lenker
-    for a in soup.select("a[href*='/event']"):
-        title = a.get_text(strip=True)
-        if not title:
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
+
+        await page.goto("https://www.parkteatret.no/program", wait_until="networkidle")
+
+        anchors = await page.eval_on_selector_all(
+            "a[href]",
+            "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim()}))"
+        )
+
+        await browser.close()
+
+    for a in anchors:
+        href = a.get("href", "")
+        text = a.get("text", "")
+
+        if "parkteatret.no" not in href:
+            continue
+        if len(text) < 5:
             continue
 
-        event_url = a["href"]
-        if event_url.startswith("/"):
-            event_url = "https://www.parkteatret.no" + event_url
-
-        parent_text = a.parent.get_text(" ", strip=True)
-
-        # Finn dato
-        m_date = re.search(r"(\\d{2})\\.(\\d{2})\\.(\\d{2})", parent_text)
+        m_date = re.search(r"(\\d{2})\\.(\\d{2})\\.(\\d{2})", text)
         if not m_date:
             continue
 
         dd, mm, yy = map(int, m_date.groups())
         year = 2000 + yy
 
-        # Finn tid
-        m_time = re.search(r"(\\d{1,2}):(\\d{2})", parent_text)
+        m_time = re.search(r"(\\d{1,2}):(\\d{2})", text)
         hh, mi = (int(m_time.group(1)), int(m_time.group(2))) if m_time else (19, 0)
 
         dt = datetime(year, mm, dd, hh, mi, tzinfo=OSLO_TZ)
 
         events.append(Event(
-            id=f"parkteatret|{event_url}",
+            id=f"parkteatret|{href}",
             source="parkteatret",
             venue="Parkteatret",
-            title=title,
+            title=text,
             start=dt.isoformat(),
-            url=event_url
+            url=href
         ))
 
     return events
